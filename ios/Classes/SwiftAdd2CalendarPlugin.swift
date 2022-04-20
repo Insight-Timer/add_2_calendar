@@ -46,9 +46,8 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
         let endDate = Date(milliseconds: (args["endDate"] as! Double))
         let alarmInterval = args["alarmInterval"] as? Double
         let allDay = args["allDay"] as! Bool
-        let url = args["url"] as! String
-        
-        
+        let url = (args["url"] as? String) ?? ""
+         
         let eventStore = EKEventStore()
         
         eventStore.requestAccess(to: .event, completion: { [weak self] (granted, error) in
