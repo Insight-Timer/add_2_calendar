@@ -13,6 +13,7 @@ extension Date {
 var statusBarStyle = UIApplication.shared.statusBarStyle
 
 public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
+    private static var eventsBeingEdited: [EKEvent: (Bool) -> Void] = [:]
     
     public static func register(with registrar: FlutterPluginRegistrar) {
       let channel = FlutterMethodChannel(name: "add_2_calendar", binaryMessenger: registrar.messenger())
@@ -99,18 +100,16 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
         switch authStatus {
         case .authorized:
             OperationQueue.main.addOperation {
-                self.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
+                self.presentEventCalendarDetailModal(event: event, eventStore: eventStore, completion: completion)
             }
-            completion?(true)
         case .notDetermined:
             //Auth is not determined
             //We should request access to the calendar
             eventStore.requestAccess(to: .event, completion: { [weak self] (granted, error) in
                 if granted {
                     OperationQueue.main.addOperation {
-                        self?.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
+                        self?.presentEventCalendarDetailModal(event: event, eventStore: eventStore, completion: completion)
                     }
-                    completion?(true)
                 } else {
                     // Auth denied
                     completion?(false)
@@ -124,12 +123,13 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
     
     // Present edit event calendar modal
     
-    func presentEventCalendarDetailModal(event: EKEvent, eventStore: EKEventStore) {
+    func presentEventCalendarDetailModal(event: EKEvent, eventStore: EKEventStore, completion: ((Bool) -> Void)?) {
+        Self.eventsBeingEdited[event] = completion
+        
         let eventModalVC = EKEventEditViewController()
         eventModalVC.event = event
         eventModalVC.eventStore = eventStore
         eventModalVC.editViewDelegate = self
-        
         if #available(iOS 13, *) {
             eventModalVC.modalPresentationStyle = .fullScreen
         }
@@ -148,6 +148,16 @@ extension SwiftAdd2CalendarPlugin: EKEventEditViewDelegate {
     public func eventEditViewController(_ controller: EKEventEditViewController, didCompleteWith action: EKEventEditViewAction) {
         controller.dismiss(animated: true, completion: {
             UIApplication.shared.statusBarStyle = statusBarStyle
+            
+            let eventCompletionPair = Self.eventsBeingEdited.first(where: {
+                $0.key == controller.event
+            })
+            if let eventCompletionPair = eventCompletionPair {
+                Self.eventsBeingEdited.removeValue(forKey: eventCompletionPair.key)
+                eventCompletionPair.value(action == .saved)
+            } else {
+                assertionFailure()
+            }
         })
     }
 }
