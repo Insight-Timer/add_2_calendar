@@ -40,15 +40,16 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
         
         
         let title = args["title"] as! String
-        let description = args["desc"] as! String
-        let location = args["location"] as! String
+        let description = args["desc"] is NSNull ? nil: args["desc"] as! String
+        let location = args["location"] is NSNull ? nil: args["location"] as! String
         let timeZone = args["timeZone"] is NSNull ? nil: TimeZone(identifier: args["timeZone"] as! String)
         let startDate = Date(milliseconds: (args["startDate"] as! Double))
         let endDate = Date(milliseconds: (args["endDate"] as! Double))
         let alarmInterval = args["alarmInterval"] as? Double
         let allDay = args["allDay"] as! Bool
-        let url = (args["url"] as? String) ?? ""
-         
+        let url = args["url"] as? String
+        
+        
         let eventStore = EKEventStore()
         
         eventStore.requestAccess(to: .event, completion: { [weak self] (granted, error) in
@@ -63,10 +64,16 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
                 if (timeZone != nil) {
                     event.timeZone = timeZone
                 }
-                event.location = location
-                event.notes = description
+                if (location != nil) {
+                    event.location = location
+                }
+                if (description != nil) {
+                    event.notes = description
+                }
+                if let url = url{
+                    event.url = URL(string: url);
+                }
                 event.isAllDay = allDay
-                event.url = URL(string: url);
                 
                 if let recurrence = args["recurrence"] as? [String:Any]{
                     let interval = recurrence["interval"] as! Int
