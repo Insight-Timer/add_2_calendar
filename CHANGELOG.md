@@ -1,5 +1,12 @@
+# 2.2.3
+* Fixed android location field
+# 2.2.2
+* Fixed android location field
+# 2.2.1
+* Fix crash when no url is provided on iOS
 # 2.2.0
 * Add support for setting URL on iOS devices
+* Description and location optional
 
 ## 2.1.3
 Flutter 2.10 support
