@@ -52,7 +52,7 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
         
         let eventStore = EKEventStore()
         
-        eventStore.requestAccess(to: .event, completion: { [weak self] (granted, error) in
+        let completion = { [weak self] (granted: Bool, error: Error?) in
             if (granted) && (error == nil) {
                 let event = EKEvent(eventStore: eventStore)
                 if let alarm = alarmInterval{
@@ -89,13 +89,36 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
                     event.recurrenceRules = [recurrenceRule]
                 }
                 
+#if swift(>=5.9)
+                if #available(iOS 17.0, *) {
+                    OperationQueue.main.addOperation {
+                        self?.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
+                    }
+                    completion?(true)
+                } else {
+                    self?.presentCalendarModalToAddEvent(event, eventStore: eventStore, completion: completion)
+                }
+#else
+                self?.presentCalendarModalToAddEvent(event, eventStore: eventStore, completion: completion)
+#endif
+                
                 self?.presentCalendarModalToAddEvent(event, eventStore: eventStore, completion: completion)
             } else {
                 completion?(false)
             }
-        })
+        }
+        
+#if swift(>=5.9)
+        if #available(iOS 17.0, *) {
+            completion(true, nil)
+        } else {
+            eventStore.requestAccess(to: .event, completion: completion)
+        }
+#else
+        eventStore.requestAccess(to: .event, completion: completion)
+#endif
     }
-
+    
     private func getAuthorizationStatus() -> EKAuthorizationStatus {
         return EKEventStore.authorizationStatus(for: EKEntityType.event)
     }
@@ -105,6 +128,10 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
     func presentCalendarModalToAddEvent(_ event: EKEvent, eventStore: EKEventStore, completion: ((_ success: Bool) -> Void)? = nil) {
         let authStatus = getAuthorizationStatus()
         switch authStatus {
+#if swift(>=5.9)
+        case .fullAccess, .writeOnly:
+            fallthrough
+#endif
         case .authorized:
             OperationQueue.main.addOperation {
                 self.presentEventCalendarDetailModal(event: event, eventStore: eventStore, completion: completion)
