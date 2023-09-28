@@ -92,9 +92,8 @@ public class SwiftAdd2CalendarPlugin: NSObject, FlutterPlugin {
 #if swift(>=5.9)
                 if #available(iOS 17.0, *) {
                     OperationQueue.main.addOperation {
-                        self?.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
+                        self?.presentEventCalendarDetailModal(event: event, eventStore: eventStore, completion: completion)
                     }
-                    completion?(true)
                 } else {
                     self?.presentCalendarModalToAddEvent(event, eventStore: eventStore, completion: completion)
                 }
