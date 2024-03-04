@@ -1,5 +1,21 @@
+# 3.0.1
+* Fixes duplicated compile options on Android
+# 3.0.0
+* Rebuilt plugin with latest plugin generator
+# 2.2.5
+* Changed Gradle version to 8.4
+* Support for iOS 17
+# 2.2.4
+* Fixed new version swift issue for default switch case
+# 2.2.3
+* Fixed android location field
+# 2.2.2
+* Fixed android location field
+# 2.2.1
+* Fix crash when no url is provided on iOS
 # 2.2.0
 * Add support for setting URL on iOS devices
+* Description and location optional
 
 ## 2.1.3
 Flutter 2.10 support

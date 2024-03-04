@@ -19,45 +19,46 @@ import java.util.*
 
 
 /** Add2CalendarPlugin */
-class Add2CalendarPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
-    /// The MethodChannel that will the communication between Flutter and native Android
-    ///
-    /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-    /// when the Flutter Engine is detached from the Activity
-    private lateinit var channel: MethodChannel
-    private var activity: Activity? = null
-    private var context: Context? = null
+class Add2CalendarPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
+  /// The MethodChannel that will the communication between Flutter and native Android
+  ///
+  /// This local reference serves to register the plugin with the Flutter Engine and unregister it
+  /// when the Flutter Engine is detached from the Activity
+  private lateinit var channel : MethodChannel
+  private var activity: Activity? = null
+  private var context: Context? = null
 
-    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        context = flutterPluginBinding.applicationContext
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "add_2_calendar")
-        channel.setMethodCallHandler(this)
-    }
+  override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    context = flutterPluginBinding.applicationContext
+    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "add_2_calendar")
+    channel.setMethodCallHandler(this)
+  }
+ 
+  override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+      if (call.method == "add2Cal") {
+          val success = insert(
+              call.argument("title")!!,
+              call.argument("desc") as String?,
+              call.argument("location") as String?,
+              call.argument("startDate")!!,
+              call.argument("endDate")!!,
+              call.argument("timeZone") as String?,
+              call.argument("allDay")!!,
+              call.argument("recurrence") as HashMap<String, Any>?,
+              call.argument("invites") as String?
+          )
+          result.success(success)
 
-    override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-        if (call.method == "add2Cal") {
-                val success = insert(call.argument("title")!!,
-                        call.argument("desc")!!,
-                        call.argument("location")!!,
-                        call.argument("startDate")!!,
-                        call.argument("endDate")!!,
-                        call.argument("timeZone") as String?,
-                        call.argument("allDay")!!,
-                        call.argument("recurrence") as HashMap<String,Any>?,
-                        call.argument("invites") as String?
-                )
-                result.success(success)
+      } else {
+          result.notImplemented()
+      }
+  }
 
-        } else {
-            result.notImplemented()
-        }
-    }
+  override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+    channel.setMethodCallHandler(null)
+  }
 
-    override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        channel.setMethodCallHandler(null)
-    }
-
-    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+ override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity
     }
 
@@ -73,7 +74,17 @@ class Add2CalendarPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         activity = null
     }
 
-    private fun insert(title: String, desc:String,  loc:String,  start:Long,  end:Long,  timeZone:String?,  allDay:Boolean,  recurrence:HashMap<String,Any>?,  invites:String?): Boolean {
+    private fun insert(
+        title: String,
+        desc: String?,
+        loc: String?,
+        start: Long,
+        end: Long,
+        timeZone: String?,
+        allDay: Boolean,
+        recurrence: HashMap<String, Any>?,
+        invites: String?
+    ): Boolean {
 
         val mContext: Context = if (activity != null) activity!!.applicationContext else context!!
         val intent = Intent(Intent.ACTION_INSERT)
@@ -81,8 +92,15 @@ class Add2CalendarPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
         intent.data = CalendarContract.Events.CONTENT_URI
         intent.putExtra(CalendarContract.Events.TITLE, title)
-        intent.putExtra(CalendarContract.Events.DESCRIPTION, desc)
-        intent.putExtra(CalendarContract.Events.EVENT_LOCATION, loc)
+
+        if (desc != null) {
+            intent.putExtra(CalendarContract.Events.DESCRIPTION, desc)
+        }
+
+        if (loc != null) {
+            intent.putExtra(CalendarContract.Events.EVENT_LOCATION, loc)
+        }
+
         intent.putExtra(CalendarContract.Events.EVENT_TIMEZONE, timeZone)
         intent.putExtra(CalendarContract.Events.EVENT_END_TIMEZONE, timeZone)
         intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, start)
@@ -98,7 +116,7 @@ class Add2CalendarPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-        if(intent.resolveActivity(mContext.packageManager)!= null){
+        if (intent.resolveActivity(mContext.packageManager) != null) {
             mContext.startActivity(intent)
             return true
         }
@@ -106,7 +124,7 @@ class Add2CalendarPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
 
-    private fun buildRRule(recurrence: HashMap<String,Any>): String? {
+    private fun buildRRule(recurrence: HashMap<String, Any>): String? {
 
         var rRule = recurrence["rRule"] as String?
         if (rRule == null) {
